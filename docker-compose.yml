@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  hue-poll-amd64:
+    image: vaahtokarkki/hue-poll:amd64
+    container_name: hue-poll
+    env_file:
+      - './.env'
+    restart: unless-stopped
+    volumes:
+      - ./.phue_config:/code/.phue_config
+  hue-poll-armv7:
+    image: vaahtokarkki/hue-poll:armv7
+    container_name: hue-poll
+    env_file:
+      - './.env'
+    restart: unless-stopped
+    volumes:
+      - ./.phue_config:/code/.phue_config
+  hue-poll-armv6:
+    image: vaahtokarkki/hue-poll:armv6
+    container_name: hue-poll
+    env_file:
+      - './.env'
+    restart: unless-stopped
+    volumes:
+      - ./.phue_config:/code/.phue_config
