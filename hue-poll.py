@@ -7,6 +7,7 @@ from phue import Bridge
 LOCK, DIM_LOCK = False
 BRIDGE_IP = os.environ.get('BRIDGE_IP')
 LIGHT_TO_POLL = os.environ.get('LIGHT_TO_POLL')
+LIGHT_TO_DIM = os.environ.get('LIGHT_TO_DIM')
 TIMER = os.environ.get('TIMER', 5*60)
 INTERVAL = os.environ.get('INTERVAL', 60)
 
@@ -67,6 +68,7 @@ def main():
     while True:
         try:
             poll(bridge, LIGHT_TO_POLL, LOCK)
+            dim(bridge, LIGHT_TO_DIM, DIM_LOCK)
         except Exception as e:
             logger.exception(e)
 
