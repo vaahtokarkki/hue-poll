@@ -4,7 +4,7 @@ import sys
 import time
 from phue import Bridge
 
-LOCK = False
+LOCK, DIM_LOCK = False
 BRIDGE_IP = os.environ.get('BRIDGE_IP')
 LIGHT_TO_POLL = os.environ.get('LIGHT_TO_POLL')
 TIMER = os.environ.get('TIMER', 5*60)
@@ -28,15 +28,31 @@ def poll(bridge, LIGHT_TO_POLL, LOCK):
         return
     try:
         LOCK = True
-        lights = bridge.get_light_objects('name')
-        if lights[LIGHT_TO_POLL].on:
+        light_is_on = bridge.get_light(LIGHT_TO_POLL, 'on')
+        if light_is_on:
             time.sleep(TIMER)
-            lights[LIGHT_TO_POLL].on = False
+            bridge.set_light(LIGHT_TO_POLL, 'on', False)
             logger.info(f'Turned off light {LIGHT_TO_POLL}')
     except Exception as e:
-        logger.error("l", str(e))
+        logger.exception(e)
     time.sleep(INTERVAL)
     LOCK = False
+
+def dim(bridge, LIGHT_TO_DIM, DIM_LOCK):
+    if DIM_LOCK:
+        time.sleep(INTERVAL)
+        return
+    try:
+        LOCK = True
+        light = bridge.get_light(LIGHT_TO_DIM)
+        if light.on and light.brightness > 60:
+            time.sleep(TIMER)
+            bridge.set_light(LIGHT_TO_POLL, 'bri', 60)
+            logger.info(f'Dimmed light {LIGHT_TO_DIM}')
+    except Exception as e:
+        logger.exception(e)
+    time.sleep(INTERVAL)
+    DIM_LOCK = False
 
 def main():
     if not BRIDGE_IP:
@@ -52,7 +68,7 @@ def main():
         try:
             poll(bridge, LIGHT_TO_POLL, LOCK)
         except Exception as e:
-            logger.error("k", str(e))
+            logger.exception(e)
 
 
 if __name__ == "__main__":
