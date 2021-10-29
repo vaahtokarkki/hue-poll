@@ -4,11 +4,10 @@ import sys
 import time
 from phue import Bridge
 
-LOCK, DIM_LOCK = False
+LOCK = {"dim": 0, "off": 0}
 BRIDGE_IP = os.environ.get('BRIDGE_IP')
 LIGHT_TO_POLL = os.environ.get('LIGHT_TO_POLL')
 LIGHT_TO_DIM = os.environ.get('LIGHT_TO_DIM')
-TIMER = os.environ.get('TIMER', 5*60)
 INTERVAL = os.environ.get('INTERVAL', 60)
 
 logger = logging.getLogger("main")
@@ -23,37 +22,51 @@ def get_bridge():
     config_path = f"{os.getcwd()}/.phue_config"
     return Bridge(BRIDGE_IP, config_file_path=config_path)
 
-def poll(bridge, LIGHT_TO_POLL, LOCK):
-    if LOCK:
-        time.sleep(INTERVAL)
-        return
+def turn_off(bridge, LIGHT_TO_POLL):
     try:
-        LOCK = True
+        bridge.set_light(LIGHT_TO_POLL, 'on', False)
+        logger.info(f'Turned off {LIGHT_TO_POLL}')
+        return True
+    except Exception as e:
+        logger.exception(e)
+    return False
+
+def poll(bridge, LIGHT_TO_POLL):
+    if LOCK['off'] == 5:
+        turn_off(bridge, LIGHT_TO_POLL)
+        LOCK['off'] = 0
+    elif LOCK['off'] > 0:
+        LOCK['off'] += 1
+    else:
         light_is_on = bridge.get_light(LIGHT_TO_POLL, 'on')
         if light_is_on:
-            time.sleep(TIMER)
-            bridge.set_light(LIGHT_TO_POLL, 'on', False)
-            logger.info(f'Turned off light {LIGHT_TO_POLL}')
-    except Exception as e:
-        logger.exception(e)
-    time.sleep(INTERVAL)
-    LOCK = False
+            LOCK['off'] = 1
 
-def dim(bridge, LIGHT_TO_DIM, DIM_LOCK):
-    if DIM_LOCK:
-        time.sleep(INTERVAL)
-        return
+def dim(bridge, LIGHT_TO_DIM):
+    light_is_on = bridge.get_light(LIGHT_TO_DIM, 'on')
+    if not light_is_on:
+        logger.info(f'Light is already off')
+        return False
     try:
-        LOCK = True
-        light = bridge.get_light(LIGHT_TO_DIM)
-        if light.on and light.brightness > 60:
-            time.sleep(TIMER)
-            bridge.set_light(LIGHT_TO_POLL, 'bri', 60)
-            logger.info(f'Dimmed light {LIGHT_TO_DIM}')
+        bridge.set_light(LIGHT_TO_DIM, 'bri', 60)
+        logger.info(f'Dimmed light {LIGHT_TO_DIM}')
+        return True
     except Exception as e:
         logger.exception(e)
-    time.sleep(INTERVAL)
-    DIM_LOCK = False
+    return False
+
+def dim_poll(bridge, LIGHT_TO_DIM):
+    if LOCK['dim'] == 2:
+        dim(bridge, LIGHT_TO_DIM)
+        LOCK['dim'] = 0
+    elif LOCK['dim'] > 0:
+        LOCK['dim'] += 1
+    else:
+        light_is_on = bridge.get_light(LIGHT_TO_DIM, 'on')
+        light_bri = bridge.get_light(LIGHT_TO_DIM, 'bri')
+        if light_is_on and light_bri > 60:
+            LOCK['dim'] = 1
+
 
 def main():
     if not BRIDGE_IP:
@@ -67,10 +80,11 @@ def main():
     logger.info(f'Hue poll started, connected to bridge {bridge.name}')
     while True:
         try:
-            poll(bridge, LIGHT_TO_POLL, LOCK)
-            dim(bridge, LIGHT_TO_DIM, DIM_LOCK)
+            poll(bridge, LIGHT_TO_POLL)
+            dim_poll(bridge, LIGHT_TO_DIM)
         except Exception as e:
             logger.exception(e)
+        time.sleep(INTERVAL)
 
 
 if __name__ == "__main__":

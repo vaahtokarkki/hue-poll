@@ -6,12 +6,13 @@ services:
     container_name: hue-poll
     build:
       context: .
-      dockerfile: ./docker/armv7.Dockerfile
+      dockerfile: ./docker/Dockerfile
     env_file:
       - './.env'
     restart: unless-stopped
     volumes:
       - ./.phue_config:/code/.phue_config
+      - ./:/code
   hue-poll-armv7:
     image: vaahtokarkki/hue-poll:armv7
     container_name: hue-poll
