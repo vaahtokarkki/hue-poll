@@ -56,7 +56,7 @@ def dim(bridge, LIGHT_TO_DIM):
     return False
 
 def dim_poll(bridge, LIGHT_TO_DIM):
-    if LOCK['dim'] == 2:
+    if LOCK['dim'] == 5:
         dim(bridge, LIGHT_TO_DIM)
         LOCK['dim'] = 0
     elif LOCK['dim'] > 0:
