@@ -1,6 +1,6 @@
 Mega simple hue script to turn off light when it is turned on.
 
-# hue-poll
+# [deprecated] hue-poll
 
 Create file `.env` and add following content:
 ```
